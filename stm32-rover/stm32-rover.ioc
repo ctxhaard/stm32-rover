@@ -33,6 +33,7 @@ Mcu.UserConstants=
 Mcu.UserName=STM32F030R8Tx
 MxCube.Version=4.27.0
 MxDb.Version=DB.4.0.270
+NVIC.EXTI4_15_IRQn=true\:0\:0\:false\:false\:true\:true
 NVIC.HardFault_IRQn=true\:0\:0\:false\:false\:true\:false
 NVIC.NonMaskableInt_IRQn=true\:0\:0\:false\:false\:true\:false
 NVIC.PendSV_IRQn=true\:0\:0\:false\:false\:true\:false

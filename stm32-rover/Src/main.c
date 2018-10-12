@@ -51,7 +51,7 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+volatile int _start = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -110,7 +110,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  while(!_start);
 
+	  l298n_power(100,1,100,1);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
@@ -269,10 +271,21 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if (B1_Pin == GPIO_Pin) {
+		// NOTE: blue pushbutton pressed
+		printf("blue pushbutton pressed\n");
+		_start = 1;
+	}
+}
 /* USER CODE END 4 */
 
 /**
