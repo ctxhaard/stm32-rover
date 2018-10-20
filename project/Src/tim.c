@@ -164,12 +164,12 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
     /**TIM16 GPIO Configuration    
     PB8     ------> TIM16_CH1 
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_8;
+    GPIO_InitStruct.Pin = ECHO1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF2_TIM16;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    HAL_GPIO_Init(ECHO1_GPIO_Port, &GPIO_InitStruct);
 
     /* TIM16 interrupt Init */
     HAL_NVIC_SetPriority(TIM16_IRQn, 3, 0);
@@ -244,7 +244,7 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
     /**TIM16 GPIO Configuration    
     PB8     ------> TIM16_CH1 
     */
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_8);
+    HAL_GPIO_DeInit(ECHO1_GPIO_Port, ECHO1_Pin);
 
     /* TIM16 interrupt Deinit */
     HAL_NVIC_DisableIRQ(TIM16_IRQn);

@@ -84,6 +84,10 @@
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
+#define ECHO1_Pin GPIO_PIN_8
+#define ECHO1_GPIO_Port GPIOB
+#define TRIG1_Pin GPIO_PIN_9
+#define TRIG1_GPIO_Port GPIOB
 
 /* ########################## Assert Selection ############################## */
 /**

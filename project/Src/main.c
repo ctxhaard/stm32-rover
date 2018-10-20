@@ -112,7 +112,7 @@ int main(void)
   MX_TIM16_Init();
   /* USER CODE BEGIN 2 */
   l298n_init(&htim3);
-
+  HAL_TIM_IC_Start_IT(&htim16, TIM_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */
@@ -127,7 +127,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+	  // TEST: durata impulso da sensore di prossimità
+	  __HAL_TIM_GET_COMPARE(&htim16, TIM_CHANNEL_1);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
@@ -195,6 +196,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		osSignalSet(defaultTaskHandle,SIGNAL_FLAG_BTN);
 	}
 }
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+	  if (htim->Instance==TIM16) {
+		  __HAL_TIM_SET_COUNTER(&htim16,0);
+	  }
+}
 /* USER CODE END 4 */
 
 /**
@@ -214,7 +222,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
   /* USER CODE END Callback 1 */
 }
 
