@@ -63,6 +63,7 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 volatile int _start = 0;
+volatile uint32_t dist_mm;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -199,8 +200,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-	  if (htim->Instance==TIM16) {
-		  __HAL_TIM_SET_COUNTER(&htim16,0);
+	  if (htim->Instance==TIM16 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
+
+		  uint32_t capture_value = HAL_TIM_ReadCapturedValue(htim,TIM_CHANNEL_1);
+		  // un incremento di 1 (a 48kHz) corrisponde a 7,1 mm
+		  dist_mm = (capture_value * 7);
+
+		  osSignalSet(sensorsTaskHandle,SIGNAL_FLAG_BT);
 	  }
 }
 /* USER CODE END 4 */

@@ -186,7 +186,10 @@ void StartSensorsTask(void const * argument)
 	// TODO: leggere dati da sensori
 	for(;;)
 	{
-		osDelay(1);
+		HAL_GPIO_WritePin(TRIG1_GPIO_Port,TRIG1_Pin, GPIO_PIN_SET);
+		osDelay(1); // basterebbero 100 us
+		HAL_GPIO_WritePin(TRIG1_GPIO_Port,TRIG1_Pin, GPIO_PIN_RESET);
+		osSignalWait(SIGNAL_FLAG_BT, osWaitForever);
 	}
 }
 
