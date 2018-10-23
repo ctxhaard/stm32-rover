@@ -170,8 +170,8 @@ void StartDefaultTask(void const * argument)
 		if (!_start) {
 			l298n_roll();
 		} else {
-			// TODO: modulare movimento
-			l298n_power(100,1,100,1);
+			int power = (dist_mm - 200);
+			l298n_power(power,1,power,1);
 
 		}
 
@@ -190,7 +190,7 @@ void StartSensorsTask(void const * argument)
 		osDelay(1); // basterebbero 100 us
 		edge_num = 0;
 		HAL_GPIO_WritePin(TRIG1_GPIO_Port,TRIG1_Pin, GPIO_PIN_RESET);
-		osSignalWait(SIGNAL_FLAG_BT, osWaitForever);
+		osSignalWait(SIGNAL_FLAG_PROX, osWaitForever);
 	}
 }
 
