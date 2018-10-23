@@ -106,12 +106,12 @@ void MX_TIM16_Init(void)
   TIM_IC_InitTypeDef sConfigIC;
 
   htim16.Instance = TIM16;
-  htim16.Init.Prescaler = 999;
+  htim16.Init.Prescaler = 19;
   htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim16.Init.Period = 65535;
   htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim16.Init.RepetitionCounter = 0;
-  htim16.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  htim16.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim16) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);

@@ -188,6 +188,7 @@ void StartSensorsTask(void const * argument)
 	{
 		HAL_GPIO_WritePin(TRIG1_GPIO_Port,TRIG1_Pin, GPIO_PIN_SET);
 		osDelay(1); // basterebbero 100 us
+		edge_num = 0;
 		HAL_GPIO_WritePin(TRIG1_GPIO_Port,TRIG1_Pin, GPIO_PIN_RESET);
 		osSignalWait(SIGNAL_FLAG_BT, osWaitForever);
 	}

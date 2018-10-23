@@ -98,6 +98,7 @@
 
 /* USER CODE BEGIN Private defines */
 extern volatile int _start;
+extern volatile int edge_num;
 
 extern osThreadId sensorsTaskHandle;
 extern osThreadId bluetoothTaskHandle;
