@@ -99,11 +99,13 @@
 /* USER CODE BEGIN Private defines */
 extern volatile int _start;
 extern volatile int edge_num;
-extern volatile uint32_t dist_mm;
+//extern volatile uint32_t dist_mm;
 
 extern osThreadId sensorsTaskHandle;
 extern osThreadId bluetoothTaskHandle;
 extern osThreadId defaultTaskHandle;
+
+extern QueueHandle_t distanceQueueHandle;
 
 #define SIGNAL_FLAG_BTN (1 << 0)
 #define SIGNAL_FLAG_BT (1 << 1)

@@ -204,14 +204,15 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 	  if (htim->Instance==TIM16 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
 
 		  if (edge_num++ == 1) {
-			  uint32_t capture_value = __HAL_TIM_GET_COMPARE(htim,TIM_CHANNEL_1);
+			  uint32_t capval = __HAL_TIM_GET_COMPARE(htim,TIM_CHANNEL_1);
 			  //uint32_t capture_value = HAL_TIM_ReadCapturedValue(htim,TIM_CHANNEL_1);
-			  // un incremento di 1 (a 48MHz) corrisponde a 0.0071 mm unit�
+			  // un incremento di 1 (a 48MHz) corrisponde a 0.0071 mm unita'
 			  // PSC a 20 ==> 0.143 mm / tick
-			  dist_mm = (capture_value * 0.143) / 2; // diviso 2 perch� andata e ritorno
+			  uint32_t distmm = (capval * 0.143) / 2; // diviso 2 perche' andata e ritorno
 
+			  osMessagePut(distanceQueueHandle, distmm, 0);
 			  osSignalSet(sensorsTaskHandle,SIGNAL_FLAG_PROX);
-			  osSignalSet(defaultTaskHandle,SIGNAL_FLAG_PROX);
+			  //osSignalSet(defaultTaskHandle,SIGNAL_FLAG_PROX);
 		  }
 		  __HAL_TIM_SET_COUNTER(htim,0);
 	  }

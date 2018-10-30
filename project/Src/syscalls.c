@@ -5,23 +5,22 @@
  *      Author: ctomasin
  */
 
-// NOTE: sembra che sull STM32F0 non ci sia ITM!!!
-#if 0
+#include "usart.h"
+#include  <errno.h>
+#include  <sys/unistd.h> // STDOUT_FILENO, STDERR_FILENO
 
-#include "main.h"
-#include "stm32f0xx_hal.h"
-
-
-int _write(int file, char *ptr, int len)
+int _write(int file, char *data, int len)
 {
-	int DataIdx;
+   if ((file != STDOUT_FILENO) && (file != STDERR_FILENO))
+   {
+      errno = EBADF;
+      return -1;
+   }
 
-	for (DataIdx = 0; DataIdx < len; DataIdx++)
-	{
-	   ITM_SendChar( *ptr++ );
-	}
+   // arbitrary timeout 1000
+   HAL_StatusTypeDef status =
+      HAL_UART_Transmit(&huart2, (uint8_t*)data, len, 1000);
 
-	return len;
+   // return # of bytes written - as best we can tell
+   return (status == HAL_OK ? len : 0);
 }
-
-#endif
