@@ -56,7 +56,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */     
-#include "l298n.h"
+#include "rover.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -76,17 +76,11 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-osThreadId sensorsTaskHandle;
-osThreadId bluetoothTaskHandle;
-
-osMessageQId(distanceQueueHandle);
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-void StartSensorsTask(void const * argument);
-void StartBluetoothTask(void const * argument);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void const * argument);
@@ -97,19 +91,6 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 void vApplicationIdleHook(void);
 
 /* USER CODE BEGIN 2 */
-__weak void vApplicationIdleHook( void )
-{
-	/* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
-   to 1 in FreeRTOSConfig.h. It will be called on each iteration of the idle
-   task. It is essential that code added to this hook function never attempts
-   to block in any way (for example, call xQueueReceive() with a block time
-   specified, or call vTaskDelay()). If the application makes use of the
-   vTaskDelete() API function (as this demo application does) then it is also
-   important that vApplicationIdleHook() is permitted to return to its calling
-   function, because it is the responsibility of the idle task to clean up
-   memory allocated by the kernel to any task that has since been deleted. */
-	__WFE();
-}
 /* USER CODE END 2 */
 
 /**
@@ -141,15 +122,7 @@ void MX_FREERTOS_Init(void) {
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
-	// coda di ricezione delle misurazioni dei sensori di prossimità
-	osMessageQDef(sensors_mq, 5, uint32_t);
-	distanceQueueHandle = osMessageCreate(osMessageQ(sensors_mq), defaultTaskHandle);
-
-	osThreadDef(sensorsTask, StartSensorsTask, osPriorityNormal, 0, 128);
-	sensorsTaskHandle = osThreadCreate(osThread(sensorsTask), NULL);
-
-	osThreadDef(bluetoothTask, StartBluetoothTask, osPriorityNormal, 0, 128);
-	bluetoothTaskHandle = osThreadCreate(osThread(bluetoothTask), NULL);
+	rover_tasks_init();
 	/* USER CODE END RTOS_THREADS */
 
 	/* USER CODE BEGIN RTOS_QUEUES */
@@ -169,47 +142,12 @@ void StartDefaultTask(void const * argument)
 
 	/* USER CODE BEGIN StartDefaultTask */
 	/* Infinite loop */
-	for(;;)
-	{
-		//osSignalWait(0x00,osWaitForever);
-		osEvent event = osMessageGet(distanceQueueHandle,osWaitForever);
-		if (event.status == osEventMessage) {
-			uint32_t dist_mm = event.value.v;
-			if (!_start) {
-				l298n_roll();
-			} else {
-				int power = (dist_mm - 200);
-				l298n_power(power,1,power,1);
-			}
-		}
-
-	}
+	default_task_loop();
 	/* USER CODE END StartDefaultTask */
 }
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-void StartSensorsTask(void const * argument)
-{
-	// TODO: leggere dati da sensori
-	for(;;)
-	{
-		HAL_GPIO_WritePin(TRIG1_GPIO_Port,TRIG1_Pin, GPIO_PIN_SET);
-		osDelay(1); // basterebbero 100 us
-		edge_num = 0;
-		HAL_GPIO_WritePin(TRIG1_GPIO_Port,TRIG1_Pin, GPIO_PIN_RESET);
-		osSignalWait(SIGNAL_FLAG_PROX, osWaitForever);
-	}
-}
-
-void StartBluetoothTask(void const * argument)
-{
-	// TODO: ottenere i comandi dal bluetooth
-	for(;;)
-	{
-		osDelay(1);
-	}
-}
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

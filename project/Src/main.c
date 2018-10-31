@@ -129,8 +129,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  // TEST: durata impulso da sensore di prossimità
-	  __HAL_TIM_GET_COMPARE(&htim16, TIM_CHANNEL_1);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
@@ -190,33 +188,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-	if (B1_Pin == GPIO_Pin) {
-		// NOTE: blue pushbutton pressed
-		_start = !_start;
-		osSignalSet(defaultTaskHandle,SIGNAL_FLAG_BTN);
-	}
-}
-
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
-{
-	  if (htim->Instance==TIM16 && htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1) {
-
-		  if (edge_num++ == 1) {
-			  uint32_t capval = __HAL_TIM_GET_COMPARE(htim,TIM_CHANNEL_1);
-			  //uint32_t capture_value = HAL_TIM_ReadCapturedValue(htim,TIM_CHANNEL_1);
-			  // un incremento di 1 (a 48MHz) corrisponde a 0.0071 mm unita'
-			  // PSC a 20 ==> 0.143 mm / tick
-			  uint32_t distmm = (capval * 0.143) / 2; // diviso 2 perche' andata e ritorno
-
-			  osMessagePut(distanceQueueHandle, distmm, 0);
-			  osSignalSet(sensorsTaskHandle,SIGNAL_FLAG_PROX);
-			  //osSignalSet(defaultTaskHandle,SIGNAL_FLAG_PROX);
-		  }
-		  __HAL_TIM_SET_COUNTER(htim,0);
-	  }
-}
 /* USER CODE END 4 */
 
 /**
