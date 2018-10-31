@@ -15,7 +15,7 @@ extern volatile int _start;
 extern volatile int edge_num;
 //extern volatile uint32_t dist_mm;
 
-extern osThreadId sensorsTaskHandle;
+extern osThreadId frontSensorPulseTaskHandle;
 extern osThreadId bluetoothTaskHandle;
 extern osThreadId defaultTaskHandle;
 
@@ -33,7 +33,7 @@ void rover_tasks_init();
 
 void default_task_loop();
 
-void StartSensorsTask(void const * argument);
+void StartFrontSensorPulseTask(void const * argument);
 
 void StartBluetoothTask(void const * argument);
 

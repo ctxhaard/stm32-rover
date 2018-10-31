@@ -8,7 +8,7 @@
 #include "rover.h"
 #include "l298n.h"
 
-osThreadId sensorsTaskHandle;
+osThreadId frontSensorPulseTaskHandle;
 osThreadId bluetoothTaskHandle;
 
 osMessageQId(distanceQueueHandle);
@@ -40,7 +40,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 			  uint32_t distmm = (capval * 0.143) / 2; // diviso 2 perche' andata e ritorno
 
 			  osMessagePut(distanceQueueHandle, distmm, 0);
-			  osSignalSet(sensorsTaskHandle,SIGNAL_FLAG_PROX);
+			  osSignalSet(frontSensorPulseTaskHandle,SIGNAL_FLAG_PROX);
 		  }
 		  __HAL_TIM_SET_COUNTER(htim,0);
 	  }
@@ -72,8 +72,8 @@ void rover_tasks_init()
 	osMessageQDef(sensors_mq, 5, uint32_t);
 	distanceQueueHandle = osMessageCreate(osMessageQ(sensors_mq), defaultTaskHandle);
 
-	osThreadDef(sensorsTask, StartSensorsTask, osPriorityNormal, 0, 128);
-	sensorsTaskHandle = osThreadCreate(osThread(sensorsTask), NULL);
+	osThreadDef(frontTask, StartFrontSensorPulseTask, osPriorityNormal, 0, 128);
+	frontSensorPulseTaskHandle = osThreadCreate(osThread(frontTask), NULL);
 
 	osThreadDef(bluetoothTask, StartBluetoothTask, osPriorityNormal, 0, 128);
 	bluetoothTaskHandle = osThreadCreate(osThread(bluetoothTask), NULL);
@@ -103,7 +103,7 @@ void default_task_loop()
 /**
  * Proximity sensors task: produces the impulse on the TRIGGER signal
  * */
-void StartSensorsTask(void const * argument)
+void StartFrontSensorPulseTask(void const * argument)
 {
 	for(;;)
 	{
