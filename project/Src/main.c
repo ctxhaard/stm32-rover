@@ -118,6 +118,9 @@ int main(void)
   /* USER CODE BEGIN 2 */
   l298n_init(&htim3);
   HAL_TIM_IC_Start_IT(&htim16, TIM_CHANNEL_1);
+  //RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2,ENABLE);
+
+
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */

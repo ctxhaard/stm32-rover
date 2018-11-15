@@ -16,13 +16,13 @@ extern volatile int edge_num;
 //extern volatile uint32_t dist_mm;
 
 extern osThreadId frontSensorPulseTaskHandle;
-extern osThreadId bluetoothTaskHandle;
+extern osThreadId uartTaskHandle;
 extern osThreadId defaultTaskHandle;
 
 extern QueueHandle_t distanceQueueHandle;
 
 #define SIGNAL_FLAG_BTN (1 << 0)
-#define SIGNAL_FLAG_BT (1 << 1)
+#define SIGNAL_FLAG_UART (1 << 1)
 #define SIGNAL_FLAG_PROX (1 << 2)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
@@ -35,6 +35,6 @@ void default_task_loop();
 
 void StartFrontSensorPulseTask(void const * argument);
 
-void StartBluetoothTask(void const * argument);
+void StartUartTask(void const * argument);
 
 #endif /* ROVER_H_ */

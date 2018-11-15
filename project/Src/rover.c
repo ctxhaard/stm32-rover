@@ -7,11 +7,16 @@
 
 #include "rover.h"
 #include "l298n.h"
+#include "usart.h"
+
+#define RECEIVE_BUF_SIZE 50
 
 osThreadId frontSensorPulseTaskHandle;
-osThreadId bluetoothTaskHandle;
+osThreadId uartTaskHandle;
 
 osMessageQId(distanceQueueHandle);
+
+uint8_t rxBuffer[RECEIVE_BUF_SIZE];
 
 /**
  * Blue pushbutton interrupt management
@@ -47,6 +52,16 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 }
 
 /**
+ * Input from esp8266
+ * */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	// TODO: gestire l'input
+	//while (rxBuffer[0] != '.');
+	osSignalSet(uartTaskHandle,SIGNAL_FLAG_UART);
+}
+
+/**
  * FreeRTOS method to keep the processor in low power mode when idle
  * */
 __weak void vApplicationIdleHook( void )
@@ -75,8 +90,8 @@ void rover_tasks_init()
 	osThreadDef(frontTask, StartFrontSensorPulseTask, osPriorityNormal, 0, 128);
 	frontSensorPulseTaskHandle = osThreadCreate(osThread(frontTask), NULL);
 
-	osThreadDef(bluetoothTask, StartBluetoothTask, osPriorityNormal, 0, 128);
-	bluetoothTaskHandle = osThreadCreate(osThread(bluetoothTask), NULL);
+	osThreadDef(uartTask, StartUartTask, osPriorityNormal, 0, 128);
+	uartTaskHandle = osThreadCreate(osThread(uartTask), NULL);
 }
 
 /**
@@ -118,11 +133,13 @@ void StartFrontSensorPulseTask(void const * argument)
 /**
  * Bluetooth task
  * */
-void StartBluetoothTask(void const * argument)
+void StartUartTask(void const * argument)
 {
-	// TODO: ottenere i comandi dal bluetooth
+	// TODO: ottenere i comandi dalla seriale
 	for(;;)
 	{
 		osDelay(1);
+		HAL_UART_Receive_IT(&huart2,rxBuffer,RECEIVE_BUF_SIZE);
+		osSignalWait(SIGNAL_FLAG_UART, 1000);
 	}
 }

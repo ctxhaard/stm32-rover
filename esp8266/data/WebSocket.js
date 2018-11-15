@@ -1,4 +1,5 @@
-var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
+//var connection = new WebSocket('ws://'+location.hostname+':81/', ['arduino']);
+var connection = new WebSocket('ws://192.168.4.1:81/', ['arduino']);
 
 connection.onopen = function () {
     console.log('Connect ' + new Date());
