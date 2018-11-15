@@ -171,12 +171,16 @@
                 joystick.on('start end', function (evt, data) {
                     dump(evt.type);
                     debug(data);
+                    send(evt.type);
                 }).on('move', function (evt, data) {
                     debug(data);
+                    send('for:' + data.force.toFixed(2));
                 }).on('dir:up plain:up dir:left plain:left dir:down ' +
                     'plain:down dir:right plain:right',
                     function (evt, data) {
                         dump(evt.type);
+                        debug(data);
+                        send(evt.type);
                     }
                 ).on('pressure', function (evt, data) {
                     debug({pressure: data});
