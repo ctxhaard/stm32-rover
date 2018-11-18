@@ -127,7 +127,7 @@
             </div>
             <div class="zone dynamic active"></div>
         </div>
-        <script src="nipplejs.js" charset="utf-8"></script>
+        <script src="nipplejs.js" type="text/javascript"></script>
         <script src="WebSocket.js" type="text/javascript"></script>
         <script>
             var s = function (sel) { return document.querySelector(sel); };
@@ -172,19 +172,48 @@
                     dump(evt.type);
                     debug(data);
                     send(evt.type);
-                }).on('move', function (evt, data) {
+                })
+
+                .on('move', function (evt, data) {
                     debug(data);
-                    send('for:' + data.force.toFixed(2));
-                }).on('dir:up plain:up dir:left plain:left dir:down ' +
-                    'plain:down dir:right plain:right',
+                    last_force = (data.force * 100).toFixed();
+                    sendUpdate();
+                    //send('force:' + data.force.toFixed(2));
+                })
+
+                .on('dir:up dir:left dir:down dir:right',
                     function (evt, data) {
+                        last_dir = evt.type.split(':')[1];
+                        sendUpdate();
                         dump(evt.type);
                         debug(data);
-                        send(evt.type);
+                        //send(evt.type);
                     }
-                ).on('pressure', function (evt, data) {
+                )
+                .on('plain:up plain:down',
+                    function (evt, data) {
+                        last_hplain = evt.type.split(':')[1];
+                        sendUpdate();
+                        dump(evt.type);
+                        debug(data);
+                        //send(evt.type);
+                    }
+                )
+                .on('plain:left plain:right',
+                    function (evt, data) {
+                        last_vplain = evt.type.split(':')[1];
+                        sendUpdate();
+                        dump(evt.type);
+                        debug(data);
+                        //send(evt.type);
+                    }
+                )
+
+/*
+                .on('pressure', function (evt, data) {
                     debug({pressure: data});
                 });
+*/
             }
 
             function createNipple (evt) {
