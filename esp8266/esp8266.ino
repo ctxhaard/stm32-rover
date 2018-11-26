@@ -210,7 +210,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       }
       break;
     case WStype_TEXT:                     // if new text data is received
-      Serial.printf("%s\n", payload);
+      Serial.print(payload);
       break;
   }
 }

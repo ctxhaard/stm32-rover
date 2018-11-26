@@ -24,6 +24,7 @@ extern QueueHandle_t distanceQueueHandle;
 #define SIGNAL_FLAG_BTN (1 << 0)
 #define SIGNAL_FLAG_UART (1 << 1)
 #define SIGNAL_FLAG_PROX (1 << 2)
+#define SIGNAL_FLAG_COMMAND (1 << 3)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 

@@ -16,6 +16,13 @@ enum {
 };
 
 void l298n_init(TIM_HandleTypeDef *);
+
+/**
+ * @param left_power value 0 - 100
+ * @param left_dir MOTOR_DIR_FORWARD or MOTOR_DIR_REVERSE
+ * @param right_power value 0 - 100
+ * @param right_dir MOTOR_DIR_FORWARD or MOTOR_DIR_REVERSE
+ * */
 void l298n_power(int left_power,int left_dir, int right_power, int right_dir);
 void l298n_roll();
 void l298n_brake();

@@ -9,14 +9,31 @@
 #include "l298n.h"
 #include "usart.h"
 
-#define RECEIVE_BUF_SIZE 50
+#include <string.h>
+#include <stdlib.h>
+
+#define RECEIVE_BUF_SIZE 12
+#define READ_SIZE         7  // size of smaller command i.e \r\nend\r\n
 
 osThreadId frontSensorPulseTaskHandle;
 osThreadId uartTaskHandle;
 
 osMessageQId(distanceQueueHandle);
 
-uint8_t rxBuffer[RECEIVE_BUF_SIZE];
+struct command_t {
+	uint8_t size;
+	char command[6];
+};
+
+osMailQDef(command_q,10,struct command_t);
+osMailQId(command_q_id);
+
+enum {
+	READ_STATUS_BEFORE,
+	READ_STATUS_BEGIN_R_FOUND,
+	READ_STATUS_COMMAND_FOUND,
+	READ_STATUS_END_R_FOUND,
+};
 
 /**
  * Blue pushbutton interrupt management
@@ -46,18 +63,69 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
 			  osMessagePut(distanceQueueHandle, distmm, 0);
 			  osSignalSet(frontSensorPulseTaskHandle,SIGNAL_FLAG_PROX);
+			  osSignalSet(defaultTaskHandle,SIGNAL_FLAG_PROX);
 		  }
 		  __HAL_TIM_SET_COUNTER(htim,0);
 	  }
 }
+
+static int rxNextReadSize = READ_SIZE;
+static uint8_t rxBuffer[RECEIVE_BUF_SIZE];
+static int rxIndex = 0;
+static int rxStatus = READ_STATUS_BEFORE;
+static int rxCommandBegin = 0;
 
 /**
  * Input from esp8266
  * */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	// TODO: gestire l'input
-	//while (rxBuffer[0] != '.');
+	int index = rxIndex;
+	for(index = 0; (index - rxIndex) < rxNextReadSize && index < RECEIVE_BUF_SIZE; ++index) {
+		switch (rxStatus) {
+		case READ_STATUS_BEFORE:
+			if ( rxBuffer[ index ] == '\r' ) rxStatus = READ_STATUS_BEGIN_R_FOUND;
+			break;
+		case READ_STATUS_BEGIN_R_FOUND:
+			if ( rxBuffer[ index ] == '\n' ) {
+				rxStatus = READ_STATUS_COMMAND_FOUND;
+				rxCommandBegin = (index + 1);
+			} else{
+				rxStatus = READ_STATUS_BEFORE;
+				rxIndex = 0;
+				rxCommandBegin = 0;
+				rxNextReadSize = READ_SIZE;
+			}
+			break;
+		case READ_STATUS_COMMAND_FOUND:
+			if ( rxBuffer [ index ] == '\r') rxStatus = READ_STATUS_END_R_FOUND;
+			break;
+		case READ_STATUS_END_R_FOUND:
+			if ( rxBuffer [ index ] == '\n') {
+				int rxCommandEnd = (index - 2);
+				// il comando va da rxCommandBegin a (index - 2)
+				struct command_t *pCmd;
+				pCmd = (struct command_t*)osMailAlloc(command_q_id, osWaitForever);
+				pCmd->size = (rxCommandEnd - rxCommandBegin);
+				memcpy(pCmd->command,&rxBuffer[rxCommandBegin], (rxCommandEnd - rxCommandBegin));
+				osMailPut(command_q_id, pCmd);
+				osSignalSet(defaultTaskHandle,SIGNAL_FLAG_COMMAND);
+			}
+			rxStatus = READ_STATUS_BEFORE;
+//			rxCommandBegin = 0;
+//			rxNextReadSize = READ_SIZE;
+			break;
+		}
+		if (index >= RECEIVE_BUF_SIZE) {
+			rxStatus = READ_STATUS_BEFORE;
+			rxIndex = 0;
+			rxCommandBegin = 0;
+			rxNextReadSize = READ_SIZE;
+		} else if ((index - rxIndex) > rxNextReadSize) {
+			rxIndex += rxNextReadSize;
+			rxNextReadSize = 1;
+		}
+	}
 	osSignalSet(uartTaskHandle,SIGNAL_FLAG_UART);
 }
 
@@ -94,24 +162,125 @@ void rover_tasks_init()
 	uartTaskHandle = osThreadCreate(osThread(uartTask), NULL);
 }
 
+enum {
+	CMD_STOP = 0,
+	CMD_0_45 = 1,
+	CMD_45_90 = 2,
+	CMD_90_135 = 3,
+	CMD_135_180 = 4,
+	CMD_180_225 = 5,
+	CMD_225_270 = 6,
+	CMD_270_315 =7,
+	CMD_315_360 = 8
+};
+
+
+static int commandGetCmd(const struct command_t *pCmd) {
+	int result= CMD_STOP;
+	//TODO: parsing comando
+	if (pCmd->size > 2 && pCmd->command[1] == ':'){
+		result = atoi(pCmd->command);
+	}
+	return result;
+}
+
+static int commandGetForce(const struct command_t *pCmd) {
+	int result = 100;
+	// TODO: parsing comand, get 0 - 100 value
+	return result;
+}
+
+
+#define MIN_DISTANCE_MM 100
 /**
  * Default task main loop; task function in prepared by ST Cube MX into freertos.c
  * */
 void default_task_loop()
 {
+	uint32_t last_dist_mm = 0;
+	int last_cmd = CMD_STOP;
+	int last_cmd_force = 0;
 	for(;;)
 	{
-		osEvent event = osMessageGet(distanceQueueHandle,osWaitForever);
-		if (event.status == osEventMessage) {
-			uint32_t dist_mm = event.value.v;
-			if (!_start) {
-				l298n_roll();
-			} else {
-				int power = (dist_mm - 200);
-				l298n_power(power,1,power,1);
-			}
+		osSignalWait(0, osWaitForever);
+		osEvent cmdEvent = osMailGet(command_q_id,0);
+		osEvent proxyEvent = osMessageGet(distanceQueueHandle,0);
+
+		if (cmdEvent.status == osEventMessage) {
+			struct command_t *pCmd =(struct command_t*)cmdEvent.value.p;
+			last_cmd = commandGetCmd(pCmd);
+			last_cmd_force = commandGetForce(pCmd);
+		}
+		if (proxyEvent.status == osEventMessage) {
+			last_dist_mm = proxyEvent.value.v;
 		}
 
+		if (!_start || CMD_STOP == last_cmd || last_cmd_force == 0) {
+			l298n_roll();
+		} else if (last_dist_mm <= MIN_DISTANCE_MM && (CMD_315_360 == last_cmd || CMD_0_45 == last_cmd)) {
+			l298n_roll();
+		} else {
+			int power_r = 0;
+			int dir_r = MOTOR_DIR_FORWARD;
+			int power_l = 0;
+			int dir_l = MOTOR_DIR_FORWARD;
+			switch (last_cmd) {
+			case CMD_0_45:
+				// TODO: assegnare i valori appropriati
+				dir_l = MOTOR_DIR_FORWARD;
+				dir_r = MOTOR_DIR_FORWARD;
+				power_l = last_cmd_force;
+				power_r = last_cmd_force;
+				break;
+			case CMD_45_90:
+				// TODO: assegnare i valori appropriati
+				dir_l = MOTOR_DIR_FORWARD;
+				dir_r = MOTOR_DIR_FORWARD;
+				power_l = last_cmd_force;
+				power_r = 0;
+				break;
+			case CMD_90_135:
+				// TODO: assegnare i valori appropriati
+				dir_l = MOTOR_DIR_REVERSE;
+				dir_r = MOTOR_DIR_REVERSE;
+				power_l = last_cmd_force;
+				power_r = 0;
+				break;
+			case CMD_135_180:
+				// TODO: assegnare i valori appropriati
+				dir_l = MOTOR_DIR_REVERSE;
+				dir_r = MOTOR_DIR_REVERSE;
+				power_l = last_cmd_force;
+				power_r = last_cmd_force;
+				break;
+			case CMD_180_225:
+				// TODO: assegnare i valori appropriati
+				dir_l = MOTOR_DIR_REVERSE;
+				dir_r = MOTOR_DIR_REVERSE;
+				power_l = last_cmd_force;
+				power_r = last_cmd_force;
+				break;
+			case CMD_225_270:
+				// TODO: assegnare i valori appropriati
+				dir_l = MOTOR_DIR_REVERSE;
+				dir_r = MOTOR_DIR_REVERSE;
+				power_l = 0;
+				power_r = last_cmd_force;
+				break;
+			case CMD_270_315:
+				dir_l = 1;
+				dir_r = 1;
+				break;
+			case CMD_315_360:
+				dir_l = 1;
+				dir_r = 1;
+				power_l = last_cmd_force;
+				power_r = last_cmd_force;
+				break;
+			}
+			l298n_power(power_l, dir_l, power_r, dir_r);
+		}
+//		osDelay(10);
 	}
 }
 
@@ -135,11 +304,12 @@ void StartFrontSensorPulseTask(void const * argument)
  * */
 void StartUartTask(void const * argument)
 {
+	command_q_id = osMailCreate(osMailQ(command_q), NULL);
 	// TODO: ottenere i comandi dalla seriale
 	for(;;)
 	{
 		osDelay(1);
-		HAL_UART_Receive_IT(&huart2,rxBuffer,RECEIVE_BUF_SIZE);
+		HAL_UART_Receive_IT(&huart2,rxBuffer + rxIndex, rxNextReadSize);
 		osSignalWait(SIGNAL_FLAG_UART, 1000);
 	}
 }
