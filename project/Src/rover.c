@@ -69,11 +69,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 	  }
 }
 
-static int rxNextReadSize = READ_SIZE;
+static volatile int rxNextReadSize = READ_SIZE;
 static uint8_t rxBuffer[RECEIVE_BUF_SIZE];
-static int rxIndex = 0;
-static int rxStatus = READ_STATUS_BEFORE;
-static int rxCommandBegin = 0;
+static volatile int rxIndex = 0;
+static volatile int rxStatus = READ_STATUS_BEFORE;
+static volatile int rxCommandBegin = 0;
 
 /**
  * Input from esp8266
@@ -84,7 +84,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	for(index = 0; (index - rxIndex) < rxNextReadSize && index < RECEIVE_BUF_SIZE; ++index) {
 		switch (rxStatus) {
 		case READ_STATUS_BEFORE:
-			if ( rxBuffer[ index ] == '\r' ) rxStatus = READ_STATUS_BEGIN_R_FOUND;
+			if ( rxBuffer[ index ] == '\r' )
+				rxStatus = READ_STATUS_BEGIN_R_FOUND;
 			break;
 		case READ_STATUS_BEGIN_R_FOUND:
 			if ( rxBuffer[ index ] == '\n' ) {
@@ -98,14 +99,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 			}
 			break;
 		case READ_STATUS_COMMAND_FOUND:
-			if ( rxBuffer [ index ] == '\r') rxStatus = READ_STATUS_END_R_FOUND;
+			if ( rxBuffer [ index ] == '\r')
+				rxStatus = READ_STATUS_END_R_FOUND;
 			break;
 		case READ_STATUS_END_R_FOUND:
 			if ( rxBuffer [ index ] == '\n') {
 				int rxCommandEnd = (index - 2);
 				// il comando va da rxCommandBegin a (index - 2)
 				struct command_t *pCmd;
-				pCmd = (struct command_t*)osMailAlloc(command_q_id, osWaitForever);
+				pCmd = (struct command_t*)osMailAlloc(command_q_id, 0); // ISR devono mettere 0 come timeout
 				pCmd->size = (rxCommandEnd - rxCommandBegin);
 				memcpy(pCmd->command,&rxBuffer[rxCommandBegin], (rxCommandEnd - rxCommandBegin));
 				osMailPut(command_q_id, pCmd);
@@ -115,16 +117,18 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 //			rxCommandBegin = 0;
 //			rxNextReadSize = READ_SIZE;
 			break;
+		default:
+			break;
 		}
-		if (index >= RECEIVE_BUF_SIZE) {
-			rxStatus = READ_STATUS_BEFORE;
-			rxIndex = 0;
-			rxCommandBegin = 0;
-			rxNextReadSize = READ_SIZE;
-		} else if ((index - rxIndex) > rxNextReadSize) {
-			rxIndex += rxNextReadSize;
-			rxNextReadSize = 1;
-		}
+	}
+	if (index >= RECEIVE_BUF_SIZE) {
+		rxStatus = READ_STATUS_BEFORE;
+		rxIndex = 0;
+		rxCommandBegin = 0;
+		rxNextReadSize = READ_SIZE;
+	} else if ((index - rxIndex) >= rxNextReadSize) {
+		rxIndex += rxNextReadSize;
+		rxNextReadSize = 1;
 	}
 	osSignalSet(uartTaskHandle,SIGNAL_FLAG_UART);
 }
@@ -143,7 +147,7 @@ __weak void vApplicationIdleHook( void )
    important that vApplicationIdleHook() is permitted to return to its calling
    function, because it is the responsibility of the idle task to clean up
    memory allocated by the kernel to any task that has since been deleted. */
-	__WFE();
+	//__WFE();
 }
 
 /**
@@ -177,29 +181,114 @@ enum {
 
 static int commandGetCmd(const struct command_t *pCmd) {
 	int result= CMD_STOP;
-	//TODO: parsing comando
 	if (pCmd->size > 2 && pCmd->command[1] == ':'){
-		result = atoi(pCmd->command);
+		char *tail;
+		const char *v = pCmd->command;
+		long int val = strtol(v,&tail,0);
+		if (v != tail) {
+			result = val;
+		}
+		//result = atoi(pCmd->command);
 	}
 	return result;
 }
 
 static int commandGetForce(const struct command_t *pCmd) {
-	int result = 100;
-	// TODO: parsing comand, get 0 - 100 value
+	int result = 0;
+	if (pCmd->size > 2 && pCmd->command[1] == ':'){
+		//result = atoi(&pCmd->command[2]);
+		char *tail;
+		const char *v = &pCmd->command[2];
+		long int val = strtol(v,&tail,0);
+		if (v != tail) {
+			result = val;
+		}
+	}
 	return result;
 }
 
 
 #define MIN_DISTANCE_MM 100
+
+static uint32_t last_dist_mm = 0;
+static int last_cmd = CMD_STOP;
+static int last_cmd_force = 0;
+
+void do_control()
+{
+	if (!_start || CMD_STOP == last_cmd || last_cmd_force == 0) {
+		l298n_roll();
+	} else if (last_dist_mm <= MIN_DISTANCE_MM && (CMD_315_360 == last_cmd || CMD_0_45 == last_cmd)) {
+		l298n_roll();
+	} else {
+		int power_r = 0;
+		int dir_r = MOTOR_DIR_FORWARD;
+		int power_l = 0;
+		int dir_l = MOTOR_DIR_FORWARD;
+		switch (last_cmd) {
+		case CMD_0_45:
+			// TODO: assegnare i valori appropriati
+			dir_l = MOTOR_DIR_FORWARD;
+			dir_r = MOTOR_DIR_FORWARD;
+			power_l = last_cmd_force;
+			power_r = last_cmd_force;
+			break;
+		case CMD_45_90:
+			// TODO: assegnare i valori appropriati
+			dir_l = MOTOR_DIR_FORWARD;
+			dir_r = MOTOR_DIR_FORWARD;
+			power_l = last_cmd_force;
+			power_r = 0;
+			break;
+		case CMD_90_135:
+			// TODO: assegnare i valori appropriati
+			dir_l = MOTOR_DIR_REVERSE;
+			dir_r = MOTOR_DIR_REVERSE;
+			power_l = last_cmd_force;
+			power_r = 0;
+			break;
+		case CMD_135_180:
+			// TODO: assegnare i valori appropriati
+			dir_l = MOTOR_DIR_REVERSE;
+			dir_r = MOTOR_DIR_REVERSE;
+			power_l = last_cmd_force;
+			power_r = last_cmd_force;
+			break;
+		case CMD_180_225:
+			// TODO: assegnare i valori appropriati
+			dir_l = MOTOR_DIR_REVERSE;
+			dir_r = MOTOR_DIR_REVERSE;
+			power_l = last_cmd_force;
+			power_r = last_cmd_force;
+			break;
+		case CMD_225_270:
+			// TODO: assegnare i valori appropriati
+			dir_l = MOTOR_DIR_REVERSE;
+			dir_r = MOTOR_DIR_REVERSE;
+			power_l = 0;
+			power_r = last_cmd_force;
+			break;
+		case CMD_270_315:
+			dir_l = 1;
+			dir_r = 1;
+			break;
+		case CMD_315_360:
+			dir_l = 1;
+			dir_r = 1;
+			power_l = last_cmd_force;
+			power_r = last_cmd_force;
+			break;
+		}
+		l298n_power(power_l, dir_l, power_r, dir_r);
+	}
+}
+
+
 /**
  * Default task main loop; task function in prepared by ST Cube MX into freertos.c
  * */
 void default_task_loop()
 {
-	uint32_t last_dist_mm = 0;
-	int last_cmd = CMD_STOP;
-	int last_cmd_force = 0;
 	for(;;)
 	{
 		osSignalWait(0, osWaitForever);
@@ -210,77 +299,14 @@ void default_task_loop()
 			struct command_t *pCmd =(struct command_t*)cmdEvent.value.p;
 			last_cmd = commandGetCmd(pCmd);
 			last_cmd_force = commandGetForce(pCmd);
+			last_cmd_force /= 2; // valori 0 - 200 => 0 - 100; sopra 200 verranno portati a 100 da do_command
+
+			osMailFree(command_q_id,cmdEvent.value.p);
 		}
 		if (proxyEvent.status == osEventMessage) {
 			last_dist_mm = proxyEvent.value.v;
 		}
-
-		if (!_start || CMD_STOP == last_cmd || last_cmd_force == 0) {
-			l298n_roll();
-		} else if (last_dist_mm <= MIN_DISTANCE_MM && (CMD_315_360 == last_cmd || CMD_0_45 == last_cmd)) {
-			l298n_roll();
-		} else {
-			int power_r = 0;
-			int dir_r = MOTOR_DIR_FORWARD;
-			int power_l = 0;
-			int dir_l = MOTOR_DIR_FORWARD;
-			switch (last_cmd) {
-			case CMD_0_45:
-				// TODO: assegnare i valori appropriati
-				dir_l = MOTOR_DIR_FORWARD;
-				dir_r = MOTOR_DIR_FORWARD;
-				power_l = last_cmd_force;
-				power_r = last_cmd_force;
-				break;
-			case CMD_45_90:
-				// TODO: assegnare i valori appropriati
-				dir_l = MOTOR_DIR_FORWARD;
-				dir_r = MOTOR_DIR_FORWARD;
-				power_l = last_cmd_force;
-				power_r = 0;
-				break;
-			case CMD_90_135:
-				// TODO: assegnare i valori appropriati
-				dir_l = MOTOR_DIR_REVERSE;
-				dir_r = MOTOR_DIR_REVERSE;
-				power_l = last_cmd_force;
-				power_r = 0;
-				break;
-			case CMD_135_180:
-				// TODO: assegnare i valori appropriati
-				dir_l = MOTOR_DIR_REVERSE;
-				dir_r = MOTOR_DIR_REVERSE;
-				power_l = last_cmd_force;
-				power_r = last_cmd_force;
-				break;
-			case CMD_180_225:
-				// TODO: assegnare i valori appropriati
-				dir_l = MOTOR_DIR_REVERSE;
-				dir_r = MOTOR_DIR_REVERSE;
-				power_l = last_cmd_force;
-				power_r = last_cmd_force;
-				break;
-			case CMD_225_270:
-				// TODO: assegnare i valori appropriati
-				dir_l = MOTOR_DIR_REVERSE;
-				dir_r = MOTOR_DIR_REVERSE;
-				power_l = 0;
-				power_r = last_cmd_force;
-				break;
-			case CMD_270_315:
-				dir_l = 1;
-				dir_r = 1;
-				break;
-			case CMD_315_360:
-				dir_l = 1;
-				dir_r = 1;
-				power_l = last_cmd_force;
-				power_r = last_cmd_force;
-				break;
-			}
-			l298n_power(power_l, dir_l, power_r, dir_r);
-		}
-//		osDelay(10);
+		do_control();
 	}
 }
 
@@ -305,11 +331,10 @@ void StartFrontSensorPulseTask(void const * argument)
 void StartUartTask(void const * argument)
 {
 	command_q_id = osMailCreate(osMailQ(command_q), NULL);
-	// TODO: ottenere i comandi dalla seriale
 	for(;;)
 	{
 		osDelay(1);
 		HAL_UART_Receive_IT(&huart2,rxBuffer + rxIndex, rxNextReadSize);
-		osSignalWait(SIGNAL_FLAG_UART, 1000);
+		osSignalWait(SIGNAL_FLAG_UART, /*osWaitForever*/1000);
 	}
 }

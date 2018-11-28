@@ -13,7 +13,7 @@
 
 TIM_HandleTypeDef *_phtim;
 
-inline int real_power(int power) {
+int real_power(int power) {
 	int result = MIN(POWER_MAX, POWER_MIN + power);
 	if (result <= POWER_MIN) result = 0;
 	return result;
