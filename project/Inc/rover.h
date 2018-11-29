@@ -11,15 +11,18 @@
 #include "stm32f0xx_hal.h"
 #include "cmsis_os.h"
 
-extern volatile int _start;
-extern volatile int edge_num;
-//extern volatile uint32_t dist_mm;
-
 extern osThreadId frontSensorPulseTaskHandle;
 extern osThreadId uartTaskHandle;
 extern osThreadId defaultTaskHandle;
 
 extern QueueHandle_t distanceQueueHandle;
+
+osMailQId(command_q_id);
+
+struct command_t {
+	uint8_t size;
+	char command[6];
+};
 
 #define SIGNAL_FLAG_BTN (1 << 0)
 #define SIGNAL_FLAG_UART (1 << 1)

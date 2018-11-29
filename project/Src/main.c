@@ -62,9 +62,6 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-volatile int _start = 0;
-volatile uint32_t dist_mm;
-volatile int edge_num = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
