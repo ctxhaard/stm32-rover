@@ -10,8 +10,8 @@
 
 #include <string.h>
 
-#define RECEIVE_BUF_SIZE 12
-#define READ_SIZE         7  // size of smaller command i.e \r\nend\r\n
+#define RECEIVE_BUF_SIZE 256
+#define READ_SIZE        16
 
 osThreadId uartTaskHandle;
 
@@ -41,8 +41,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 static
 void do_parse_input()
 {
-	int index = rxIndex;
-	for(index = 0; (index - rxIndex) < rxNextReadSize && index < RECEIVE_BUF_SIZE; ++index) {
+	int index;
+	for(index = rxIndex; (index - rxIndex) < rxNextReadSize && index < RECEIVE_BUF_SIZE; ++index) {
 		switch (rxStatus) {
 		case READ_STATUS_BEFORE:
 			if ( rxBuffer[ index ] == '\r' )
@@ -57,6 +57,7 @@ void do_parse_input()
 				rxIndex = 0;
 				rxCommandBegin = 0;
 				rxNextReadSize = READ_SIZE;
+				return;
 			}
 			break;
 		case READ_STATUS_COMMAND_FOUND:
@@ -65,18 +66,21 @@ void do_parse_input()
 			break;
 		case READ_STATUS_END_R_FOUND:
 			if ( rxBuffer [ index ] == '\n') {
-				int rxCommandEnd = (index - 2);
+				int rxCommandEnd = (index - 1);
 				// il comando va da rxCommandBegin a (index - 2)
 				struct command_t *pCmd;
 				pCmd = (struct command_t*)osMailAlloc(command_q_id, 0); // ISR devono mettere 0 come timeout
-				pCmd->size = (rxCommandEnd - rxCommandBegin);
-				memcpy(pCmd->command,&rxBuffer[rxCommandBegin], (rxCommandEnd - rxCommandBegin));
-				osMailPut(command_q_id, pCmd);
-				osSignalSet(defaultTaskHandle,SIGNAL_FLAG_COMMAND);
+				if (pCmd) {
+					pCmd->size = (rxCommandEnd - rxCommandBegin);
+					memcpy(pCmd->command,&rxBuffer[rxCommandBegin], (rxCommandEnd - rxCommandBegin));
+					osMailPut(command_q_id, pCmd);
+					osSignalSet(defaultTaskHandle,SIGNAL_FLAG_COMMAND);
+					memcpy(rxBuffer,rxBuffer+rxCommandEnd+1,(rxIndex + rxNextReadSize - rxCommandEnd));
+				}
 			}
 			rxStatus = READ_STATUS_BEFORE;
-//			rxCommandBegin = 0;
-//			rxNextReadSize = READ_SIZE;
+			rxCommandBegin = 0;
+			rxNextReadSize = READ_SIZE;
 			break;
 		default:
 			break;
@@ -104,7 +108,9 @@ void StartUartTask(void const * argument)
 	{
 		osDelay(1); // TODO: si può togliere o bisogna aumentarlo???
 		HAL_UART_Receive_IT(&huart2,rxBuffer + rxIndex, rxNextReadSize);
-		osSignalWait(SIGNAL_FLAG_UART, osWaitForever);
-		do_parse_input();
+		osEvent event = osSignalWait(SIGNAL_FLAG_UART, /*osWaitForever*/1000);
+		if (event.status == osEventSignal) {
+			do_parse_input();
+		}
 	}
 }

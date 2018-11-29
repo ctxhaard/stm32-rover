@@ -109,9 +109,6 @@ int main(void)
   MX_TIM3_Init();
   MX_USART2_UART_Init();
   MX_TIM16_Init();
-  MX_TIM17_Init();
-  MX_TIM15_Init();
-  MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
   l298n_init(&htim3);
   HAL_TIM_IC_Start_IT(&htim16, TIM_CHANNEL_1);
@@ -177,8 +174,6 @@ void SystemClock_Config(void)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
-
-  HAL_RCC_MCOConfig(RCC_MCO, RCC_MCO1SOURCE_SYSCLK, RCC_MCODIV_1);
 
     /**Configure the Systick interrupt time 
     */

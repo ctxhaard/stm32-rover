@@ -186,7 +186,7 @@ void default_task_loop()
 		osEvent cmdEvent = osMailGet(command_q_id,0);
 		osEvent proxyEvent = osMessageGet(distanceQueueHandle,0);
 
-		if (cmdEvent.status == osEventMessage) {
+		if (cmdEvent.status == osEventMail) {
 			struct command_t *pCmd =(struct command_t*)cmdEvent.value.p;
 			last_cmd = commandGetCmd(pCmd);
 			last_cmd_force = commandGetForce(pCmd);
