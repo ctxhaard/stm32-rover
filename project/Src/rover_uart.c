@@ -97,20 +97,33 @@ void do_parse_input()
 	}
 }
 
-
+#include <unistd.h>
 /**
  * UART task
  * */
 void StartUartTask(void const * argument)
 {
+	printf("starting UART task\n");
 	command_q_id = osMailCreate(osMailQ(command_q), NULL);
 	for(;;)
 	{
-		osDelay(1); // TODO: si può togliere o bisogna aumentarlo???
-		HAL_UART_Receive_IT(&huart2,rxBuffer + rxIndex, rxNextReadSize);
-		osEvent event = osSignalWait(SIGNAL_FLAG_UART, /*osWaitForever*/1000);
-		if (event.status == osEventSignal) {
+#if 1
+		if(HAL_OK == HAL_UART_Receive(&huart2,rxBuffer + rxIndex, rxNextReadSize,HAL_MAX_DELAY)) {
+			puts(">>> ");
+			write(STDOUT_FILENO,(rxBuffer+rxIndex), rxNextReadSize);
 			do_parse_input();
 		}
+
+#else
+		if (HAL_OK == HAL_UART_Receive_IT(&huart2,rxBuffer + rxIndex, rxNextReadSize)) {
+			osEvent event = osSignalWait(SIGNAL_FLAG_UART, osWaitForever);
+			if (event.status == osEventSignal) {
+				puts(">>> ");
+				write(STDOUT_FILENO,(rxBuffer+rxIndex), rxNextReadSize);
+				do_parse_input();
+			}
+		}
+
+#endif
 	}
 }

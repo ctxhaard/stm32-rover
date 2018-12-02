@@ -32,6 +32,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
  * */
 void StartFrontSensorPulseTask(void const * argument)
 {
+	printf("starting Front sensor task\n");
 	for(;;)
 	{
 		HAL_GPIO_WritePin(TRIG1_GPIO_Port,TRIG1_Pin, GPIO_PIN_SET);

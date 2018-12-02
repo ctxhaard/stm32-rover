@@ -16,11 +16,11 @@ int _write(int file, char *data, int len)
       errno = EBADF;
       return -1;
    }
-
-   // arbitrary timeout 1000
-   HAL_StatusTypeDef status =
-      HAL_UART_Transmit(&huart2, (uint8_t*)data, len, 1000);
-
+#if 1
+   HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t*)data, len, 1000);
+#else
+   HAL_StatusTypeDef status = HAL_UART_Transmit_IT(&huart1, (uint8_t*)data, len);
+#endif
    // return # of bytes written - as best we can tell
    return (status == HAL_OK ? len : 0);
 }

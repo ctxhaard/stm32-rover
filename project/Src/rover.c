@@ -46,6 +46,7 @@ __weak void vApplicationIdleHook( void )
  * */
 void rover_tasks_init()
 {
+	printf("starting main task\n");
 	// coda di ricezione delle misurazioni dei sensori di prossimità
 	osMessageQDef(sensors_mq, 5, uint32_t);
 	distanceQueueHandle = osMessageCreate(osMessageQ(sensors_mq), defaultTaskHandle);
