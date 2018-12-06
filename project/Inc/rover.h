@@ -31,6 +31,8 @@ struct command_t {
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
+void rover_IRQHandler(UART_HandleTypeDef *huart);
+
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim);
 
 void rover_tasks_init();

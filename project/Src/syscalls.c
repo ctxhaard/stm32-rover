@@ -17,7 +17,7 @@ int _write(int file, char *data, int len)
       return -1;
    }
 #if 1
-   HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t*)data, len, 1000);
+   HAL_StatusTypeDef status = HAL_UART_Transmit(&huart1, (uint8_t*)data, len, HAL_MAX_DELAY);
 #else
    HAL_StatusTypeDef status = HAL_UART_Transmit_IT(&huart1, (uint8_t*)data, len);
 #endif

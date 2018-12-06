@@ -189,6 +189,7 @@ void default_task_loop()
 
 		if (cmdEvent.status == osEventMail) {
 			struct command_t *pCmd =(struct command_t*)cmdEvent.value.p;
+			printf("command: %s\n", pCmd);
 			last_cmd = commandGetCmd(pCmd);
 			last_cmd_force = commandGetForce(pCmd);
 			last_cmd_force /= 2; // valori 0 - 200 => 0 - 100; sopra 200 verranno portati a 100 da do_command
