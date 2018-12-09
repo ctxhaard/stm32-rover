@@ -94,14 +94,14 @@ void rover_RxCallback(UART_HandleTypeDef *huart)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	puts("Buffer full!!!\n");
+	//puts("Buffer full!!!\n");
 	pRead = rxBuffer;
 	osSignalSet(uartTaskHandle,SIGNAL_FLAG_UART);
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
-	puts("Transfer error!!!\n");
+	//puts("Transfer error!!!\n");
 	pRead = rxBuffer;
 	osSignalSet(uartTaskHandle,SIGNAL_FLAG_UART);
 }
