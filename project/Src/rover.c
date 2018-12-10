@@ -100,7 +100,7 @@ static int commandGetForce(const struct command_t *pCmd) {
 }
 
 
-#define MIN_DISTANCE_MM 100
+#define MIN_DISTANCE_MM 200
 
 static uint32_t last_dist_mm = 0;
 static int last_cmd = CMD_STOP;
@@ -109,9 +109,13 @@ static int last_cmd_force = 0;
 void do_control()
 {
 	if (!_start || CMD_STOP == last_cmd || last_cmd_force == 0) {
+		puts("roll(1)\n");
 		l298n_roll();
-	} else if (last_dist_mm <= MIN_DISTANCE_MM && (CMD_315_360 == last_cmd || CMD_0_45 == last_cmd)) {
-		l298n_roll();
+	} else if (last_dist_mm <= MIN_DISTANCE_MM
+			&& (CMD_315_360 == last_cmd || CMD_0_45 == last_cmd
+					|| CMD_45_90 == last_cmd || CMD_270_315 == last_cmd)) {
+		puts("roll(2)\n");
+		l298n_brake();
 	} else {
 		int power_r = 0;
 		int dir_r = MOTOR_DIR_FORWARD;
@@ -134,10 +138,10 @@ void do_control()
 			break;
 		case CMD_90_135:
 			// TODO: assegnare i valori appropriati
-			dir_l = MOTOR_DIR_REVERSE;
+			dir_l = MOTOR_DIR_FORWARD;
 			dir_r = MOTOR_DIR_REVERSE;
 			power_l = last_cmd_force;
-			power_r = 0;
+			power_r = last_cmd_force;
 			break;
 		case CMD_135_180:
 			// TODO: assegnare i valori appropriati
@@ -156,21 +160,24 @@ void do_control()
 		case CMD_225_270:
 			// TODO: assegnare i valori appropriati
 			dir_l = MOTOR_DIR_REVERSE;
-			dir_r = MOTOR_DIR_REVERSE;
-			power_l = 0;
+			dir_r = MOTOR_DIR_FORWARD;
+			power_l = last_cmd_force;
 			power_r = last_cmd_force;
 			break;
 		case CMD_270_315:
-			dir_l = 1;
-			dir_r = 1;
+			dir_l = MOTOR_DIR_FORWARD;
+			dir_r = MOTOR_DIR_FORWARD;
+			power_l = 0;
+			power_r = last_cmd_force;
 			break;
 		case CMD_315_360:
-			dir_l = 1;
-			dir_r = 1;
+			dir_l = MOTOR_DIR_FORWARD;
+			dir_r = MOTOR_DIR_FORWARD;
 			power_l = last_cmd_force;
 			power_r = last_cmd_force;
 			break;
 		}
+		printf("go: %d:%d, %d:%d\n", power_l, dir_l, power_r, dir_r);
 		l298n_power(power_l, dir_l, power_r, dir_r);
 	}
 }

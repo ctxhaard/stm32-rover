@@ -8,12 +8,15 @@
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 
-#define POWER_MAX 200
-#define POWER_MIN 100
+#define INPUT_MAX 150 // accept values 0..150
+
+#define POWER_MAX 200 // values to PWM control are 120...200
+#define POWER_MIN 120
 
 TIM_HandleTypeDef *_phtim;
 
 int real_power(int power) {
+	power = power * (POWER_MAX - POWER_MIN) / INPUT_MAX;
 	int result = MIN(POWER_MAX, POWER_MIN + power);
 	if (result <= POWER_MIN) result = 0;
 	return result;
