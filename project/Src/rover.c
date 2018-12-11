@@ -10,7 +10,7 @@
 
 #include <stdlib.h>
 
-volatile int _start = 0;
+volatile int _start = 1; // NOTE: era 0
 
 /**
  * Blue pushbutton interrupt management

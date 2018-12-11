@@ -37,7 +37,8 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN 0 */
-
+#include "rover.h"
+#include "l298n.h"
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -70,7 +71,8 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  l298n_roll();
+  HAL_NVIC_SystemReset(); // NOTE: così riparte subito
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
