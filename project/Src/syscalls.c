@@ -9,7 +9,7 @@
 #include  <errno.h>
 #include  <sys/unistd.h> // STDOUT_FILENO, STDERR_FILENO
 
-//#define DEBUG
+#define DEBUG
 
 int _write(int file, char *data, int len)
 {

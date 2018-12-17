@@ -7,6 +7,7 @@
 
 #include "rover.h"
 #include "l298n.h"
+#include "iwdg.h"
 
 #include <stdlib.h>
 
@@ -191,6 +192,7 @@ void default_task_loop()
 	for(;;)
 	{
 		osSignalWait(0, osWaitForever);
+		HAL_IWDG_Refresh(&hiwdg);
 		osEvent cmdEvent = osMailGet(command_q_id,0);
 		osEvent proxyEvent = osMessageGet(distanceQueueHandle,0);
 

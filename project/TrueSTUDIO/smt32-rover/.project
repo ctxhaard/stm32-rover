@@ -272,6 +272,26 @@
       <type>2</type>
       
     </link><link>
+      
+      <type>2</type>
+      
+    </link><link>
+      
+      <type>2</type>
+      
+    </link><link>
+      
+      <type>2</type>
+      
+    </link><link>
+      
+      <type>2</type>
+      
+    </link><link>
+      
+      <type>2</type>
+      
+    </link><link>
       <name>Application</name>
       <type>2</type>
       <locationURI>virtual:/virtual</locationURI>
@@ -291,6 +311,10 @@
       <name>Application/User/freertos.c</name>
       <type>1</type>
       <location>PARENT-2-PROJECT_LOC/Src/freertos.c</location>
+    </link><link>
+      <name>Application/User/iwdg.c</name>
+      <type>1</type>
+      <location>PARENT-2-PROJECT_LOC/Src/iwdg.c</location>
     </link><link>
       <name>Application/User/tim.c</name>
       <type>1</type>
@@ -315,6 +339,10 @@
       <name>Drivers</name>
       <type>2</type>
       <locationURI>virtual:/virtual</locationURI>
+    </link><link>
+      <name>Drivers/STM32F0xx_HAL_Driver/stm32f0xx_hal_iwdg.c</name>
+      <type>1</type>
+      <location>PARENT-2-PROJECT_LOC/Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_iwdg.c</location>
     </link><link>
       <name>Drivers/CMSIS</name>
       <type>2</type>
