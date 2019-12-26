@@ -11,7 +11,7 @@
 
 #include <stdlib.h>
 
-volatile int _start = 1; // NOTE: era 0
+volatile int _start_req = 1; // NOTE: era 0
 
 /**
  * Blue pushbutton interrupt management
@@ -20,7 +20,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if (B1_Pin == GPIO_Pin) {
 		// NOTE: blue pushbutton pressed
-		_start = !_start;
+		_start_req = !_start_req;
 		osSignalSet(defaultTaskHandle,SIGNAL_FLAG_BTN);
 	}
 }
@@ -109,7 +109,7 @@ static int last_cmd_force = 0;
 
 void do_control()
 {
-	if (!_start || CMD_STOP == last_cmd || last_cmd_force == 0) {
+	if (!_start_req || CMD_STOP == last_cmd || last_cmd_force == 0) {
 		puts("roll(1)\n");
 		l298n_roll();
 	} else if (last_dist_mm <= MIN_DISTANCE_MM
